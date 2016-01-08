@@ -1,0 +1,58 @@
+<!doctype html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>ES6 Babel Browserify Boilerplate</title>
+
+    <style>
+      body{
+        margin: 0;
+        padding: 0;
+      }
+      canvas,.alert{
+        position: absolute;
+        left: 0; top: 0;
+        z-index: 100;
+        width: 100%;
+        height: 100%;
+      }
+      .alert{
+        z-index: 110;
+        background-color: rgba(255,255,255,0.8);
+        padding-top: 200px;
+        text-align: center;
+        display: none;
+      }
+      .debug{
+        z-index: 200;
+        position: absolute;
+        bottom: 0; left: 0;
+      }
+    </style>
+   <script src="dev/magictouch.js"></script>
+    <meta name="mobile-web-app-capable" content="yes">
+  </head>
+  <body>
+  
+    <object id="tuio" type="application/x-tuio" style="width: 0px; height: 0px;">
+      Touch input plugin failed to load!
+    </object>
+
+    <div class="debug">
+      <p>Number of touches : <span class="log-touchesnb"10></span></p>
+      <p>Touch status : <span class="log-status"></span></p>
+    </div>
+  
+    <div class="alert alert-object">
+      Place the car on the tab
+    </div>
+
+    <canvas id="main_canvas"></canvas>
+
+    <script src="./dist/vendor.js"> </script>
+    <script src="./dist/app.js"> </script>
+  </body>
+</html>
