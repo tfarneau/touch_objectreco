@@ -2,41 +2,30 @@
 // Modules
 
 import TouchService from './modules/touchservice';
+import DebugService from './modules/debugservice';
+import Interface from './modules/interface';
 
 export default class App{
 
 	constructor(){
 
+		// this.debugService = new DebugService();
+		this.ui = new Interface();
+		this.ui.set_stage(0);
+
 		this.settings = {
-			debug: true,
+			debug: false,
 			simulate_touch: false
 		};
 
 		this.tmp = {};
 
-		this.objects = [];
-
 		this.createScene();
 		this.touchService = new TouchService(this.canvas,{
 			simulate: this.settings.simulate_touch
 		});
+
 		this.render();
-
-		// this.touchService.
-
-		// this.stage.touchstart = function(e){
-		// 	console.log("coucou")
-		// }
-
-		// Multi-touch
-
-		/*
-			this.add(new Cube({
-				width: 2,
-				height: 2,
-				depth: 2
-			}));
-		 */
 
 	}
 
@@ -57,9 +46,10 @@ export default class App{
 
 		this.touchService.update_object();
 
-		if(this.settings.debug == true){
+		$('.log-touchesnb').text(this.touchService.select_touches.length);
+		$('.log-touchesobjectnb').text(this.touchService.object_touches.length);
 
-			$('.log-touchesnb').text(this.touchService.touches.length);
+		if(this.settings.debug == true){ 
 
 			// Render touches
 
@@ -70,7 +60,7 @@ export default class App{
 				this.stage.removeChild[this.tmp.log_touchs[i]];
 			}
 
-			_.each(this.touchService.touches, function(touch){
+			_.each(this.touchService.select_touches, function(touch){
 
 				this.tmp.log_touchs[touch.identifier] = new createjs.Shape();
 				this.tmp.log_touchs[touch.identifier].graphics.beginFill("blue").drawCircle(0, 0, 5);
@@ -107,27 +97,28 @@ export default class App{
 
 				// Circle
 
-				var distance = Math.sqrt( (this.touchService.object.back.x-this.touchService.object.top.x)*(this.touchService.object.back.x-this.touchService.object.top.x) + (this.touchService.object.back.y-this.touchService.object.top.y)*(this.touchService.object.back.y-this.touchService.object.top.y) );
+				var distance = this.touchService.object.size;
 				this.tmp.log_object.circle.graphics.setStrokeStyle(1).beginStroke('blue').drawCircle(0, 0, distance+5);
 				this.tmp.log_object.circle.x = this.touchService.object.middle.x;
 				this.tmp.log_object.circle.y = this.touchService.object.middle.y;
-
-				// Circle arc
-
 
 			}
 
 		}
 
+		// console.log(this.stage.children)
+		this.ui.update(this.stage, this.touchService.object, this.touchService.select_touches);
+
 		requestAnimationFrame(() => {
 			this.render();
 		});
 
-		this.objects.forEach((object) => {
-			object.update();
-		});
-
 		this.stage.update();
+
+		/*this.objects.forEach((object) => {
+			object.update();
+		});*/
+
 
 	}
 

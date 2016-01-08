@@ -5,7 +5,7 @@ export default class TouchService{
 		this.canvas = canvas;
 		this.opts = opts;
 
-		this.touches = [];
+		this.select_touches = [];
 		this.object_touches = [];
 		this.object = null;
 
@@ -44,29 +44,19 @@ export default class TouchService{
 			};
 
 			var that = this;
-			document.addEventListener('touches_added', function(){
-				if(that.object_touches.length < 3 ){
+			document.addEventListener('object_touches_added', function(){
+				console.log("recevied "+that.object_touches.length)
 
-					that.object_touches.push(that.touches[that.touches.length-1].identifier);
-
-					if(that.object_touches.length == 3){
-						that.update_status('use recognized object');
-						that.recognize_object(that.object_touches);
-					}
-
+				if(that.object_touches.length == 2){
+					that.update_status('use recognized object');
+					that.recognize_object(that.object_touches);
 				}
+
 			});
 
-			document.addEventListener('touch_removed', function(event,data){
-				for(var i in that.object_touches){
-					if(that.object_touches[i] == event.detail){
-						that.object_touches.splice(i,1);
-					}
-				}
-				if(that.object_touches.length < 3 ){ 
-					that.object = null; 
-					that.update_status('waiting object after removed');
-				}
+			document.addEventListener('object_removed', function(event){
+				that.object = null; 
+				that.update_status('waiting object after removed');
 			});
 
 
@@ -96,7 +86,7 @@ export default class TouchService{
 
 	recognize_object(touches){
 
-		var _touches = [];
+		/*var _touches = [];
 		
 		_.each(this.touches, function(registered_touch){
 			if(touches.indexOf(registered_touch.identifier) !== -1){
@@ -104,72 +94,39 @@ export default class TouchService{
 			}
 		},this);
 
-		touches = _touches;
+		console.log("touches in recognize");
+		console.log(_touches)
 
-		// Get distances
+		touches = _touches;*/
 
-		var distances = [];
-		var mindistance = 999*999;
-		var mindistance_identifier = null;
-
-		for(var i in touches){
-			var touch1 = touches[i];
-			for(var j in touches){
-				var touch2 = touches[j];
-				if(touch1.identifier !== touch2.identifier){
-					var _identifier = touch1.identifier+"|"+touch2.identifier;
-					distances[_identifier] = Math.sqrt( (touch1.clientX-touch2.clientX)*(touch1.clientX-touch2.clientX) + (touch1.clientY-touch2.clientY)*(touch1.clientY-touch2.clientY) );
-					if(distances[_identifier] < mindistance){
-						mindistance = distances[_identifier];
-						mindistance_identifier = _identifier;
-					}
-				}
-			}
+		var point_bottom = {
+			x : touches[0].clientX,
+			y : touches[0].clientY
 		}
 
-		// Get the 2 points of the smallest distance
-
-		var points = [];
-		var last_point = null;
-		var identifiers = mindistance_identifier.split('|');
-
-		for(var i in touches){
-			var touch = touches[i];
-			if(touch.identifier == identifiers[0]){
-				points.push(touch);
-			}else if(touch.identifier == identifiers[1]){
-				points.push(touch);
-			}else{
-				last_point = touch;
-			}
+		var point_top = {
+			x : touches[1].clientX,
+			y : touches[1].clientY
 		}
 
 		// Calculate the midpoint
 
-		var midpoint_back = {
-			x: (points[0].clientX+points[1].clientX)/2,
-			y: (points[0].clientY+points[1].clientY)/2
-		};
-
-		var point_top = {
-			x : last_point.clientX,
-			y : last_point.clientY
-		}
-
 		var point_middle = {
-			x: (midpoint_back.x+point_top.x)/2,
-			y: (midpoint_back.y+point_top.y)/2
+			x: (point_bottom.x+point_top.x)/2,
+			y: (point_bottom.y+point_top.y)/2
 		}
 
 		// Add the object
 
 		this.object = {
-			back : midpoint_back,
+			back : point_bottom,
 			top : point_top,
 			middle : point_middle
 		}
 
-		// console.log(point_top.x)
+		this.object.size = Math.sqrt( (this.object.back.x-this.object.top.x)*(this.object.back.x-this.object.top.x) + (this.object.back.y-this.object.top.y)*(this.object.back.y-this.object.top.y) );
+		this.object.angle =  Math.atan2(this.object.top.y - this.object.back.y, this.object.top.x - this.object.back.x) * 180 / Math.PI;
+
 	}
 
 	// -----------------
@@ -196,34 +153,71 @@ export default class TouchService{
 
 	process_touchstart(event){
 
+		console.log("EVENT - touchstart");
+		document.dispatchEvent(new CustomEvent('touch_uniq', {detail: event}));
+
 		var that = this;
 
 		_.each(event.originalEvent.changedTouches, function(touch){ 
-			that.touches.push(touch);
-			document.dispatchEvent(new Event('touches_added'));
+
+			// Choose between that.select_touches & that.object_touches
+
+			if(that.object_touches.length == 2){ // If object is already on tab, it's a finger
+				console.log("add s a finger");
+				that.select_touches.push(touch);
+			}else{ // Either, it's the object
+				console.log("add an object");
+				that.object_touches.push(touch);
+				document.dispatchEvent(new CustomEvent('object_touches_added'));
+			}
+
 		});
 
 	}
 
 	process_touchend(event){
 
-		var that = this,
-			index = 0;
+		console.log("EVENT - touchend");
 
-		_.each(that.touches, function(registered_touch){
-			if(registered_touch !== undefined){
-				var touch_identifier = event.originalEvent.changedTouches[0].identifier;
-				if(registered_touch.identifier == touch_identifier){
-					that.touches.splice(index,1); 
-					document.dispatchEvent(new CustomEvent('touch_removed',{detail: touch_identifier}));
-				}
+		var that = this;
+
+		// Is this a finger ?
+
+		for(var itouch in event.originalEvent.changedTouches){ // For each touch
+
+			// Determine if touch is a object or a finger
+			var is_type = null;
+
+			// Is this a finger ?
+			for(var i = that.select_touches.length -1; i >= 0 ; i--){
+			    if(that.select_touches[i].identifier == event.originalEvent.changedTouches[itouch].identifier){
+			    	console.log('remove a finger');
+			        that.select_touches.splice(i, 1);
+			        is_type = "finger";
+			    }
 			}
-			index++;
-		});
+
+			// Is this an object ?
+			for(var i = that.object_touches.length -1; i >= 0 ; i--){
+			    if(that.object_touches[i].identifier == event.originalEvent.changedTouches[itouch].identifier){
+			    	console.log('remove an object');
+			        is_type = "object";
+			    }
+			}
+
+			// If it's an object
+			if(is_type == "object"){
+				that.object_touches = [];
+				document.dispatchEvent(new CustomEvent('object_removed'));
+			}
+
+		}
 
 	}
 
 	process_touchmove(event){
+
+		console.log("EVENT - touchmove");
 
 		var that = this;
 

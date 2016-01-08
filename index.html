@@ -31,18 +31,48 @@
         position: absolute;
         bottom: 0; left: 0;
       }
+
+      .interface{
+        position: absolute;
+        left: 0; top: 0;
+        z-index: 1000;
+        width: 100%;
+        height: 0;
+      }
+
+      .button{
+        padding: 20px;
+        position: absolute;
+        font-size: 30px;
+      }
+
+      .button.is-selected span{
+        background-color: red;
+        color: #FFF;
+      }
+
+      .button-childs{
+        display: none;
+      }
+
+      .button.is-selected .button-childs{
+        display: block;
+      }
+
     </style>
    <script src="dev/magictouch.js"></script>
     <meta name="mobile-web-app-capable" content="yes">
   </head>
   <body>
   
-    <object id="tuio" type="application/x-tuio" style="width: 0px; height: 0px;">
+    <object id="tuio" type="application/x-tuio" style="width: 0px; height: 0px; display: none">
       Touch input plugin failed to load!
     </object>
-
+  
+    <div class="interface js-interface"></div>
     <div class="debug">
-      <p>Number of touches : <span class="log-touchesnb"10></span></p>
+      <p>Number of touches : <span class="log-touchesnb"></span></p>
+      <p>Number of touches for object : <span class="log-touchesobjectnb"></span></p>
       <p>Touch status : <span class="log-status"></span></p>
     </div>
   
